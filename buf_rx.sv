@@ -24,14 +24,14 @@ module bus_rx(
     output reg  [23:0]  enqhead_wdata        ,
     output wire [4:0]   enqhead_addr         ,
     output reg          enqhead_wen          ,
-    // input  wire [23:0]  enqhead_rdata        , // 未用端口，已注释
+    input  wire [23:0]  enqhead_rdata        , 
     output reg  [15:0]  enqtail_wdata        ,
     output wire [4:0]   enqtail_addr         ,
     output reg          enqtail_wen          ,
-    // input  wire [15:0]  enqtail_rdata        , // 未用端口，已注释
+    input  wire [15:0]  enqtail_rdata        , 
     output reg          enq_en               ,
     output wire [4:0]   enq_addr             ,
-    // input  wire [15:0]  enq_cnt               // 未用端口，已注释
+    input  wire [15:0]  enq_cnt              
 
 );
 
