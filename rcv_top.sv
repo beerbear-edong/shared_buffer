@@ -22,6 +22,7 @@ wire         fifo_full   [0:3];
 wire         fifo_empty  [0:3];
 
 wire [65:0]  bus_data_o       ;
+wire [63:0]  bus_data_i       ;
 wire         bus_data_en      ;
 
 // no ECC data output
@@ -160,6 +161,7 @@ info_collector info_collector_inst(
 );
 
 // ECC_gen removed – pass through raw 64‑bit data
+assign bus_data_i = bus_data_o[63:0];
 
 bus_rx bus_rx_inst(
     .clk                  (clk                      ),
@@ -167,7 +169,7 @@ bus_rx bus_rx_inst(
     .pkt_info_i           (pkt_info_o               ),
     .pkt_info_en          (pkt_info_en              ),
     .pkt_info_ed          (pkt_info_ed              ), 
-    .data_i               (bus_data_o               ),
+    .data_i               (bus_data_i               ),
     .data_en              (bus_data_en              ),
     .buf_blk_cnt          (buf_blk_cnt              ),
     .buf_blk_addr         (buf_blk_addr             ),

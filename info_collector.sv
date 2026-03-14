@@ -5,7 +5,7 @@
 module info_collector(
     input    wire        clk           ,
     input    wire        rst_n         ,
-    // input    wire[65:0]  bus_data_o    , // 未用端口，已注释
+    input    wire[65:0]  bus_data_o    , 
     input    wire        bus_data_en   ,
     output   reg[17:0]   pkt_info_o    ,
     output   reg         pkt_info_en   ,
