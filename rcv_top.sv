@@ -48,7 +48,7 @@ wire         buf_list_info_wen    ;
 wire [11:0]  buf_list_info_waddr  ;
 wire [31:0]  buf_list_info_wdata  ;
 wire [11:0]  buf_list_info_raddr  ;
-wire [31:0]  buf_list_info_rdata  ;
+wire [26:0]  buf_list_info_rdata  ;
 
 wire[23:0]       enqhead_wdata  ;
 wire[4:0]        enqhead_addr   ;
@@ -56,12 +56,12 @@ wire             enqhead_wen    ;
 wire[23:0]       deqhead_wdata  ;
 wire[4:0]        deqhead_addr   ;
 wire             deqhead_wen    ;
-wire[23:0]       deqhead_rdata  ;
+wire[22:0]       deqhead_rdata  ;
 
 wire[15:0]       enqtail_wdata  ;
 wire[4:0]        enqtail_addr   ;
 wire             enqtail_wen    ;
-wire[15:0]       enqtail_rdata  ;
+wire[11:0]       enqtail_rdata  ;
 wire[15:0]       deqtail_wdata  ;
 wire[4:0]        deqtail_addr   ;
 wire             deqtail_wen    ;
@@ -168,7 +168,6 @@ bus_rx bus_rx_inst(
     .pkt_info_en          (pkt_info_en              ),
     .pkt_info_ed          (pkt_info_ed              ), 
     .data_i               (bus_data_i               ),
-    .data_en              (bus_data_en              ),
     .buf_blk_cnt          (buf_blk_cnt              ),
     .buf_blk_addr         (buf_blk_addr             ),
     .buf_blk_rd_en        (buf_blk_rd_en            ),
@@ -184,7 +183,7 @@ bus_rx bus_rx_inst(
     .enqtail_wdata        (enqtail_wdata            ),
     .enqtail_addr         (enqtail_addr             ),
     .enqtail_wen          (enqtail_wen              ),
-    .enqtail_rdata        (enqtail_rdata[11:0]      ),
+    .enqtail_rdata        (enqtail_rdata            ),
     .enq_en               (enq_en                   ),
     .enq_addr             (enq_addr                 ),
     .enq_cnt              (enq_cnt                  )
@@ -259,11 +258,11 @@ bus_tx bus_tx_inst(
     .rls_buf_blk_addr     (rls_buf_blk_addr     ),
     .rls_buf_blk_en       (rls_buf_blk_en       ),
     .buf_list_info_raddr  (buf_list_info_raddr  ),
-    .buf_list_info_rdata  (buf_list_info_rdata[26:0]),
+    .buf_list_info_rdata  (buf_list_info_rdata      ),
     .deqhead_wdata        (deqhead_wdata        ),
     .deqhead_addr         (deqhead_addr         ),
     .deqhead_wen          (deqhead_wen          ),
-    .deqhead_rdata        (deqhead_rdata[22:0]  ),
+    .deqhead_rdata        (deqhead_rdata        ),
     .deqtail_wdata        (deqtail_wdata        ),
     .deqtail_addr         (deqtail_addr         ),
     .deqtail_wen          (deqtail_wen          ),

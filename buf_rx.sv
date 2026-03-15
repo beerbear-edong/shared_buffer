@@ -7,7 +7,6 @@ module bus_rx(
     input  wire         pkt_info_ed          , 
     // raw packet data (no ECC)
     input  wire [63:0]  data_i               ,
-    input  wire         data_en             ,
     // With buffer_mgr
     input  wire [12:0]  buf_blk_cnt          ,
     input  wire [11:0]  buf_blk_addr         ,

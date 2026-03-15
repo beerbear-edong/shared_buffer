@@ -12,13 +12,13 @@ module queue_mgr (
     input  wire[23:0]       deqhead_wdata  ,
     input  wire[4:0]        deqhead_addr   ,
     input  wire             deqhead_wen    ,
-    output wire[23:0]       deqhead_rdata  ,
+    output wire[22:0]       deqhead_rdata  ,
 
 
     input  wire[15:0]       enqtail_wdata  ,
     input  wire[4:0]        enqtail_addr   ,
     input  wire             enqtail_wen    ,
-    output wire[15:0]       enqtail_rdata  ,
+    output wire[11:0]       enqtail_rdata  ,
 
     input  wire[15:0]       deqtail_wdata  ,
     input  wire[4:0]        deqtail_addr   ,
@@ -232,21 +232,25 @@ qhead_info qhead_info_inst (
   .web     (deqhead_wen      ),  // input wire [0 : 0] web
   .addrb   (deqhead_addr     ),  // input wire [4 : 0] addrb
   .dinb    (deqhead_wdata    ),  // input wire [23 : 0] dinb
-  .doutb   (deqhead_rdata    )   // output wire [23 : 0] doutb
+  .doutb   (deqhead_rdata_full)  // output wire [23 : 0] doutb
 );
+wire [23:0] deqhead_rdata_full;
+assign deqhead_rdata = deqhead_rdata_full[22:0];
 
 qtail_info qtail_info_inst (
   .clka    (clk              ),  // input wire clka
   .wea     (r_enqtail_wen    ),  // input wire [0 : 0] wea
   .addra   (r_enqtail_addr   ),  // input wire [4 : 0] addra
   .dina    (r_enqtail_wdata  ),  // input wire [15 : 0] dina
-  .douta   (enqtail_rdata    ),  // output wire [15 : 0] douta
+  .douta   (enqtail_rdata_full), // output wire [15 : 0] douta
   .clkb    (clk              ),  // input wire clkb
   .web     (deqtail_wen      ),  // input wire [0 : 0] web
   .addrb   (deqtail_addr     ),  // input wire [4 : 0] addrb
   .dinb    (deqtail_wdata    ),  // input wire [15 : 0] dinb
   .doutb   (deqtail_rdata    )   // output wire [15 : 0] doutb
 );
+wire [15:0] enqtail_rdata_full;
+assign enqtail_rdata = enqtail_rdata_full[11:0];
 
 // qlen_info qlen_info_inst (
 //   .clka    (clk              ),  // input wire clka

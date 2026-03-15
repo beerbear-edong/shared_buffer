@@ -23,8 +23,9 @@ module buf_mgr(
     input  wire [11:0]  buf_list_info_waddr  ,
     input  wire [31:0]  buf_list_info_wdata  ,
     input  wire [11:0]  buf_list_info_raddr  ,
-    output wire [31:0]  buf_list_info_rdata   
+    output wire [26:0]  buf_list_info_rdata   
 );
+wire [31:0] buf_list_info_rdata_full;
 // 空闲buffer块初始化以及释放逻辑
 reg  [12:0] init_cnt                 ;
 reg         free_blk_fifo_init_done  ;
@@ -90,8 +91,9 @@ Linked_List_RAM linked_list_ram_inst(
     .dina     (buf_list_info_wdata  ),      // input wire [31 : 0] dina
     .clkb     (clk                  ),      // input wire clkb
     .addrb    (buf_list_info_raddr  ),      // input wire [11 : 0] addrb
-    .doutb    (buf_list_info_rdata  )       // output wire [31 : 0] doutb
+    .doutb    (buf_list_info_rdata_full)    // output wire [31 : 0] doutb
 );
+assign buf_list_info_rdata = buf_list_info_rdata_full[26:0];
 
 
 // memory still 72‑bit wide; pad/strip at interface
