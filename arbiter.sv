@@ -255,7 +255,8 @@ generate
             if(~rst_n) 
                 grant_ext[16*i-1-:16]  <= 16'b0;
             else if(nstate == POLLING)
-                grant_ext[16*i-1-:16]  <= {qstatus[8*i-1-:8], qstatus[8*i-1-:8]} & ~({qstatus[8*i-1-:8], qstatus[8*i-1-:8]} - {8'b0, top_pri[8*i-1-:8]});
+                grant_ext[16*i-1-:16]  <= {qstatus[8*i-1-:8], qstatus[8*i-1-:8]} 
+                & ~({qstatus[8*i-1-:8], qstatus[8*i-1-:8]} - {8'b0, top_pri[8*i-1-:8]});
             else
                 grant_ext[16*i-1-:16]  <= grant_ext[16*i-1-:16];
         end

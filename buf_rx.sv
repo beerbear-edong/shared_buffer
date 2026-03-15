@@ -63,7 +63,7 @@ wire          buf_req;
 
 reg  [11:0]   buf_use_addr, buf_use_addr_ff1;
 reg  [2:0]    buf_slice_cnt;
-reg           first_buf_flag, first_buf_flag_ff1;
+reg           first_buf_flag, first_buf_flag_ff1;// 用于标记包的第一块，单块包的第一块也是最后一块
 
 reg  [4:0]    qid;
 
@@ -267,7 +267,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-always @(posedge clk or negedge rst_n) begin
+always @(posedge clk or negedge rst_n) begin// 只有在包尾或者每块包的最后一个切片时更新enqtail，单块包在包尾更新enqtail
     if(~rst_n) begin
         enqtail_wdata  <= 16'b0;
         // enqtail_addr   <= 5'b0;
@@ -286,13 +286,13 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-always@(posedge clk or negedge rst_n) begin
+always@(posedge clk or negedge rst_n) begin// 只有在包尾或者每块包的最后一个切片时更新链表信息
     if(~rst_n) begin
         buf_list_info_wen    <= 1'b0;
         buf_list_info_waddr  <= 12'b0;
         buf_list_info_wdata  <= 32'b0;
     end
-    else if(cstate == BUFFER && nstate == IDLE && ~(enq_cnt == 16'b0 && first_buf_flag)) begin
+    else if(cstate == BUFFER && nstate == IDLE && ~(enq_cnt == 16'b0 && first_buf_flag)) begin// 只有当不是单块包的最后一块时才在包尾更新链表信息，单块包的链表信息在包头更新
         buf_list_info_wen    <= 1'b1;
         buf_list_info_waddr  <= enqtail_rdata;
         // buf_list_info_wdata  <= {first_buf_flag, 1'b1, buf_slice_cnt, buf_use_addr, r_pkt_len};
