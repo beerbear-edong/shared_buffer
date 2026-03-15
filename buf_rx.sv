@@ -24,11 +24,10 @@ module bus_rx(
     output reg  [23:0]  enqhead_wdata        ,
     output wire [4:0]   enqhead_addr         ,
     output reg          enqhead_wen          ,
-    input  wire [23:0]  enqhead_rdata        , 
     output reg  [15:0]  enqtail_wdata        ,
     output wire [4:0]   enqtail_addr         ,
     output reg          enqtail_wen          ,
-    input  wire [15:0]  enqtail_rdata        , 
+    input  wire [11:0]  enqtail_rdata        , 
     output reg          enq_en               ,
     output wire [4:0]   enq_addr             ,
     input  wire [15:0]  enq_cnt              
@@ -43,8 +42,8 @@ reg  [3:0]    nstate, cstate;
 
 reg  [63:0]   data_sample;
 reg  [63:0]   data_sample_ff1;
-reg           data_en_sample;
-reg           data_en_sample_ff1;
+//reg           data_en_sample;未使用
+//reg           data_en_sample_ff1;未使用
 reg           pkt_info_ed_ff1;
 
 
@@ -56,9 +55,7 @@ reg  [10:0]   r_pkt_len;
 reg  [2:0]    r_pkt_pri;
 reg  [3:0]    r_pkt_dst;
 
-reg           discard_flag;
 reg           enqueue_flag;
-wire [10:0]   pkt_len_dec;
 wire          buf_req;
 
 reg  [11:0]   buf_use_addr, buf_use_addr_ff1;
@@ -107,23 +104,11 @@ always @(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
         data_sample        <= 64'b0;
         data_sample_ff1    <= 64'b0;
-        data_en_sample     <= 1'b0;
     end
     else begin
         data_sample        <= data_i;
         data_sample_ff1    <= data_sample;
-        data_en_sample     <= data_en;
     end
-end
-
-always @(posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
-        discard_flag <= 1'b0;
-    end
-    else if(nstate == DISCARD)
-        discard_flag <= 1'b1;
-    else
-        discard_flag <= 1'b0;
 end
 
 always @(posedge clk or negedge rst_n) begin
@@ -138,8 +123,7 @@ end
 assign pkt_dst     = pkt_info_i[3:0] ;
 assign pkt_pri     = pkt_info_i[6:4] ;
 assign pkt_len     = pkt_info_i[17:7];
-assign pkt_len_dec = pkt_len - 11'b1; 
-assign buf_req     = (pkt_len_dec[10:3] + 8'b1 <= {buf_blk_cnt, 3'b0}) ? 1'b1 : 1'b0;
+assign buf_req     = (((pkt_len - 11'd1) >> 3) + 8'd1 <= {buf_blk_cnt, 3'b0}) ? 1'b1 : 1'b0;
 
 
 always @(posedge clk or negedge rst_n) begin

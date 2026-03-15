@@ -9,18 +9,17 @@ module bus_tx(
     output reg          rls_buf_blk_en       ,
 
     output wire [11:0]  buf_list_info_raddr  ,
-    input  wire [31:0]  buf_list_info_rdata  ,
+    input  wire [26:0]  buf_list_info_rdata  ,
 
     // With queue_mgr
     output reg  [23:0]  deqhead_wdata        ,
     output wire [4:0]   deqhead_addr         ,
     output reg          deqhead_wen          ,
-    input  wire [23:0]  deqhead_rdata        ,
+    input  wire [22:0]  deqhead_rdata        ,
 
     output wire [15:0]  deqtail_wdata        ,
     output wire [4:0]   deqtail_addr         ,
     output wire         deqtail_wen          ,
-    input  wire [15:0]  deqtail_rdata        ,
 
     output reg          deq_en               ,
     output wire [4:0]   deq_addr             ,

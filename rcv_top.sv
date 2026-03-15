@@ -53,7 +53,6 @@ wire [31:0]  buf_list_info_rdata  ;
 wire[23:0]       enqhead_wdata  ;
 wire[4:0]        enqhead_addr   ;
 wire             enqhead_wen    ;
-wire[23:0]       enqhead_rdata  ;
 wire[23:0]       deqhead_wdata  ;
 wire[4:0]        deqhead_addr   ;
 wire             deqhead_wen    ;
@@ -66,7 +65,6 @@ wire[15:0]       enqtail_rdata  ;
 wire[15:0]       deqtail_wdata  ;
 wire[4:0]        deqtail_addr   ;
 wire             deqtail_wen    ;
-wire[15:0]       deqtail_rdata  ;
 
 wire             enq_en         ;
 wire             deq_en         ;
@@ -74,8 +72,6 @@ wire[15:0]       enq_cnt        ;
 wire[15:0]       deq_cnt        ;
 wire[4:0]        enq_addr       ;
 wire[4:0]        deq_addr       ;
-reg              init_done      ;
-
 
 wire[31:0]       queue_empty    ;
 wire             sch_done       ;
@@ -151,10 +147,12 @@ rx_polling rx_polling_inst(
 );
 
 info_collector info_collector_inst(
-    .clk         (clk           ),  
-    .rst_n       (rst_n         ),  
-    .bus_data_o  (bus_data_o    ),  
-    .bus_data_en (bus_data_en   ),  
+    .clk           (clk              ),  
+    .rst_n         (rst_n            ),  
+    .bus_data_sof  (bus_data_o[65]   ),
+    .bus_data_eof  (bus_data_o[64]   ),
+    .bus_data_info (bus_data_o[17:0] ),
+    .bus_data_en   (bus_data_en      ),  
     .pkt_info_o  (pkt_info_o    ),  
     .pkt_info_en (pkt_info_en   ),
     .pkt_info_ed (pkt_info_ed   ) 
@@ -183,11 +181,10 @@ bus_rx bus_rx_inst(
     .enqhead_wdata        (enqhead_wdata            ),
     .enqhead_addr         (enqhead_addr             ),
     .enqhead_wen          (enqhead_wen              ),
-    .enqhead_rdata        (enqhead_rdata            ),
     .enqtail_wdata        (enqtail_wdata            ),
     .enqtail_addr         (enqtail_addr             ),
     .enqtail_wen          (enqtail_wen              ),
-    .enqtail_rdata        (enqtail_rdata            ),
+    .enqtail_rdata        (enqtail_rdata[11:0]      ),
     .enq_en               (enq_en                   ),
     .enq_addr             (enq_addr                 ),
     .enq_cnt              (enq_cnt                  )
@@ -219,7 +216,7 @@ queue_mgr queue_mgr_inst(
     .enqhead_wdata      (enqhead_wdata       ),
     .enqhead_addr       (enqhead_addr        ),
     .enqhead_wen        (enqhead_wen         ),
-    .enqhead_rdata      (enqhead_rdata       ),
+    .enqhead_rdata      (                    ),
     .deqhead_wdata      (deqhead_wdata       ),
     .deqhead_addr       (deqhead_addr        ),
     .deqhead_wen        (deqhead_wen         ),
@@ -231,7 +228,7 @@ queue_mgr queue_mgr_inst(
     .deqtail_wdata      (deqtail_wdata       ),
     .deqtail_addr       (deqtail_addr        ),
     .deqtail_wen        (deqtail_wen         ),
-    .deqtail_rdata      (deqtail_rdata       ),
+    .deqtail_rdata      (                    ),
     .enq_en             (enq_en              ),
     .deq_en             (deq_en              ),
     .enq_addr           (enq_addr            ),
@@ -239,7 +236,7 @@ queue_mgr queue_mgr_inst(
     .enq_cnt            (enq_cnt             ),
     .deq_cnt            (deq_cnt             ),
     .queue_empty        (queue_empty         ),
-    .init_done          (init_done           )
+    .init_done          (                    )
 );
 
 arbiter arbiter_inst(
@@ -262,15 +259,14 @@ bus_tx bus_tx_inst(
     .rls_buf_blk_addr     (rls_buf_blk_addr     ),
     .rls_buf_blk_en       (rls_buf_blk_en       ),
     .buf_list_info_raddr  (buf_list_info_raddr  ),
-    .buf_list_info_rdata  (buf_list_info_rdata  ),
+    .buf_list_info_rdata  (buf_list_info_rdata[26:0]),
     .deqhead_wdata        (deqhead_wdata        ),
     .deqhead_addr         (deqhead_addr         ),
     .deqhead_wen          (deqhead_wen          ),
-    .deqhead_rdata        (deqhead_rdata        ),
+    .deqhead_rdata        (deqhead_rdata[22:0]  ),
     .deqtail_wdata        (deqtail_wdata        ),
     .deqtail_addr         (deqtail_addr         ),
     .deqtail_wen          (deqtail_wen          ),
-    .deqtail_rdata        (deqtail_rdata        ),
     .deq_en               (deq_en               ),
     .deq_addr             (deq_addr             ),
     .deq_cnt              (deq_cnt              ),

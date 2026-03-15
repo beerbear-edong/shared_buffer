@@ -34,7 +34,6 @@ reg         free_blk_fifo_wren       ;
 wire        free_blk_fifo_req        ;
 wire [11:0] free_blk_fifo_addr       ;
 wire        free_blk_fifo_full       ;
-wire        free_blk_fifo_empty      ;//未使用
 wire [12:0] free_blk_count           ;
 
 always @(posedge clk or negedge rst_n) begin
@@ -79,7 +78,7 @@ Free_Buffer_Block_FIFO free_buffer_block_fifo_inst (
   .rd_en      (free_blk_fifo_req    ),     // input wire rd_en
   .dout       (free_blk_fifo_addr   ),     // output wire [11 : 0] dout
   .full       (free_blk_fifo_full   ),     // output wire full
-  .empty      (free_blk_fifo_empty  ),     // output wire empty
+  .empty      (                     ),     // output wire empty
   .data_count (free_blk_count       )      // output wire [12 : 0] data_count
 );
 
