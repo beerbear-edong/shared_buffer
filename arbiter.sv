@@ -28,7 +28,7 @@ reg  [7:0]   rmd[0:31]      ;
 reg  [31:0]  top_pri        ;
 
 reg  [31:0]  grant          ;
-reg  [63:0]  grant_ext      ;
+reg  [63:0]  grant_ext      ;//每8位对应一个端口的8条队列的优先级比较结果
 
 reg  [1:0]   sch_port_id    ;
 

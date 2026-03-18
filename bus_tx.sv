@@ -123,7 +123,7 @@ always@(posedge clk or negedge rst_n) begin
         rls_buf_blk_addr <= 12'b0;
     end
     else if(nstate == TRANS && buf_slice_cnt + 3'b1 == buf_list_info_rdata[25:23]) begin
-        buf_deq_addr <= buf_list_info_rdata[22:11];
+        buf_deq_addr <= buf_list_info_rdata[22:11];// 更新为下一包的地址
         rls_buf_blk_en <= 1'b1;
         rls_buf_blk_addr <= buf_deq_addr;
     end
@@ -161,8 +161,7 @@ end
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         sch_done <= 1'b0;
-    else if(nstate == TRANS && buf_list_info_rdata[26] 
-        && buf_slice_cnt + 3'b1 == buf_list_info_rdata[25:23])
+    else if(nstate == TRANS && buf_list_info_rdata[26] && buf_slice_cnt + 3'b1 == buf_list_info_rdata[25:23])
         sch_done <= 1'b1;
     else
         sch_done <= 1'b0;

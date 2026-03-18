@@ -122,7 +122,7 @@ end
 assign pkt_dst     = pkt_info_i[3:0] ;
 assign pkt_pri     = pkt_info_i[6:4] ;
 assign pkt_len     = pkt_info_i[17:7];
-assign buf_req     = (((pkt_len - 11'd1) >> 3) + 8'd1 <= {buf_blk_cnt, 3'b0}) ? 1'b1 : 1'b0;
+assign buf_req     = (((pkt_len - 11'd1) >> 3) + 8'd1  <= {buf_blk_cnt, 3'b0}) ? 1'b1 : 1'b0;
 
 
 always @(posedge clk or negedge rst_n) begin
