@@ -122,7 +122,7 @@ end
 assign pkt_dst     = pkt_info_i[3:0] ;
 assign pkt_pri     = pkt_info_i[6:4] ;
 assign pkt_len     = pkt_info_i[17:7];
-assign buf_req     = (((pkt_len - 11'd1) >> 3) + 8'd1  <= {buf_blk_cnt, 3'b0}) ? 1'b1 : 1'b0;
+assign buf_req     = (((pkt_len - 11'd1) >> 6) + 8'd1  <= buf_blk_cnt) ? 1'b1 : 1'b0;
 
 
 always @(posedge clk or negedge rst_n) begin
@@ -149,6 +149,14 @@ assign enqhead_addr = qid;
 assign enqtail_addr = qid;
 assign enq_addr     = qid;
 
+// 公共条件信号
+wire pkt_boundary  = (cstate == BUFFER && nstate == IDLE);
+wire blk_boundary  = (buf_slice_cnt == 3'h7 && enqueue_flag);
+wire any_boundary  = pkt_boundary || blk_boundary;
+wire is_1st_of_q   = (enq_cnt == 16'b0 && first_buf_flag);
+wire has_prev_blk  = ~is_1st_of_q;
+wire update_prev   = any_boundary && has_prev_blk;
+
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         enqueue_flag   <= 1'b0;
@@ -170,9 +178,7 @@ end
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         buf_use_addr  <= 12'b0;
-    else if(!enqueue_flag)
-        buf_use_addr  <= buf_blk_addr;
-    else if(enqueue_flag && buf_slice_cnt == 3'h7)
+    else if(!enqueue_flag || blk_boundary)
         buf_use_addr  <= buf_blk_addr;
     else
         buf_use_addr  <= buf_use_addr;
@@ -190,7 +196,7 @@ always@(posedge clk or negedge rst_n) begin
         first_buf_flag <= 1'b0;
     else if(cstate == IDLE && nstate == BUFFER)
         first_buf_flag <= 1'b1;
-    else if((enqueue_flag && buf_slice_cnt == 3'h7) || (cstate == BUFFER && nstate == IDLE))
+    else if(any_boundary)
         first_buf_flag <= 1'b0;
     else 
         first_buf_flag <= first_buf_flag;
@@ -233,97 +239,70 @@ end
 always @(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
         enqhead_wdata  <= 24'b0;
-        // enqhead_addr   <= 5'b0;
         enqhead_wen    <= 1'b0;
-    end
-    else if(enq_cnt == 16'b0 && first_buf_flag && 
-      ((buf_slice_cnt == 3'h7 && enqueue_flag) || 
-      (cstate == BUFFER && nstate == IDLE))) begin
-        enqhead_wdata  <= {1'b1, buf_use_addr, r_pkt_len};
-        // enqhead_addr   <= qid;
-        enqhead_wen    <= 1'b1;
     end
     else begin
-        enqhead_wdata  <= 24'b0;
-        // enqhead_addr   <= 5'b0;
-        enqhead_wen    <= 1'b0;
+        enqhead_wen   <= is_1st_of_q && any_boundary;
+        enqhead_wdata <= (is_1st_of_q && any_boundary)
+                         ? {1'b1, buf_use_addr, r_pkt_len} : 24'b0;
     end
 end
 
-always @(posedge clk or negedge rst_n) begin// 只有在包尾或者每块包的最后一个切片时更新enqtail，单块包在包尾更新enqtail
+always @(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
         enqtail_wdata  <= 16'b0;
-        // enqtail_addr   <= 5'b0;
         enqtail_wen    <= 1'b0;
-    end
-    else if((cstate == BUFFER && nstate == IDLE) ||
-            (buf_slice_cnt == 3'h7 && enqueue_flag)) begin
-        enqtail_wdata  <= {4'b0, buf_use_addr};
-        // enqtail_addr   <= qid;
-        enqtail_wen    <= 1'b1;
     end
     else begin
-        enqtail_wdata  <= 16'b0;
-        // enqtail_addr   <= 5'b0;
-        enqtail_wen    <= 1'b0;
+        enqtail_wen   <= any_boundary;
+        enqtail_wdata <= any_boundary ? {4'b0, buf_use_addr} : 16'b0;
     end
 end
 
-always@(posedge clk or negedge rst_n) begin// 只有在包尾或者每块包的最后一个切片时更新链表信息
+always@(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
         buf_list_info_wen    <= 1'b0;
         buf_list_info_waddr  <= 12'b0;
         buf_list_info_wdata  <= 32'b0;
     end
-    else if(cstate == BUFFER && nstate == IDLE && ~(enq_cnt == 16'b0 && first_buf_flag)) begin// 只有当不是单块包的最后一块时才在包尾更新链表信息，单块包的链表信息在包头更新
-        buf_list_info_wen    <= 1'b1;
-        buf_list_info_waddr  <= enqtail_rdata;
-        // buf_list_info_wdata  <= {first_buf_flag, 1'b1, buf_slice_cnt, buf_use_addr, r_pkt_len};
-        buf_list_info_wdata  <= {buf_list_info_wdata[31:23], buf_use_addr, buf_list_info_wdata[10:0]};
-    end
-    else if(pkt_ed) begin
-        buf_list_info_wen    <= 1'b1;
-        buf_list_info_waddr  <= buf_use_addr_ff1;
-        buf_list_info_wdata  <= {first_buf_flag_ff1, 1'b1, buf_slice_cnt, buf_use_addr_ff1, r_pkt_len};
-    end
-    else if(buf_slice_cnt == 3'h7 && enqueue_flag && ~(enq_cnt == 16'b0 && first_buf_flag)) begin
-        buf_list_info_wen    <= 1'b1;
-        buf_list_info_waddr  <= enqtail_rdata;
-        // buf_list_info_wdata  <= {first_buf_flag, 1'b0, buf_slice_cnt, buf_use_addr, r_pkt_len}; 
-        buf_list_info_wdata  <= {buf_list_info_wdata[31:23], buf_use_addr, buf_list_info_wdata[10:0]};
-    end
-    else if(blk_ed)begin
-        buf_list_info_wen    <= 1'b1;
-        buf_list_info_waddr  <= buf_use_addr_ff1;
-        buf_list_info_wdata  <= {first_buf_flag_ff1, 1'b0, buf_slice_cnt, buf_use_addr_ff1, r_pkt_len};
-    end
     else begin
         buf_list_info_wen    <= 1'b0;
         buf_list_info_waddr  <= 12'b0;
-        buf_list_info_wdata  <= 32'b0;    
+        buf_list_info_wdata  <= 32'b0;
+
+        if (update_prev) begin
+            // 当拍：改写前块的 next_addr，使之指向当前块
+            buf_list_info_wen    <= 1'b1;
+            buf_list_info_waddr  <= enqtail_rdata;
+            buf_list_info_wdata  <= {buf_list_info_wdata[31:23],
+                                     buf_use_addr,
+                                     buf_list_info_wdata[10:0]};
+        end
+        else if (pkt_ed || blk_ed) begin
+            // 后一拍：写当前块的完整链表条目
+            buf_list_info_wen    <= 1'b1;
+            buf_list_info_waddr  <= buf_use_addr_ff1;
+            buf_list_info_wdata  <= {first_buf_flag_ff1,
+                                     pkt_ed,
+                                     buf_slice_cnt,
+                                     buf_use_addr_ff1,
+                                     r_pkt_len};
+        end
     end
 end
 
 always@(posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
+    if(~rst_n)
         blk_ed  <= 1'b0;
-    end
-    else if(cstate == BUFFER && nstate == IDLE)
-        blk_ed  <= 1'b1;
-    else if(buf_slice_cnt == 3'h7 && enqueue_flag)
-        blk_ed  <= 1'b1;
     else
-        blk_ed  <= 1'b0;
+        blk_ed  <= any_boundary;
 end
 
 always@(posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
+    if(~rst_n)
         pkt_ed  <= 1'b0;
-    end
-    else if(cstate == BUFFER && nstate == IDLE)
-        pkt_ed  <= 1'b1;
     else
-        pkt_ed  <= 1'b0;
+        pkt_ed  <= pkt_boundary;
 end
 
 
@@ -331,10 +310,8 @@ end
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         enq_en <= 1'b0;
-    else if(cstate == BUFFER && nstate == IDLE)
-        enq_en <= 1'b1;
     else
-        enq_en <= 1'b0;
+        enq_en <= pkt_boundary;
 end
 
 endmodule
