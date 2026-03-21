@@ -150,12 +150,12 @@ assign enqtail_addr = qid;
 assign enq_addr     = qid;
 
 // 公共条件信号
-wire pkt_boundary  = (cstate == BUFFER && nstate == IDLE);
-wire blk_boundary  = (buf_slice_cnt == 3'h7 && enqueue_flag);
-wire any_boundary  = pkt_boundary || blk_boundary;
-wire is_1st_of_q   = (enq_cnt == 16'b0 && first_buf_flag);
-wire has_prev_blk  = ~is_1st_of_q;
-wire update_prev   = any_boundary && has_prev_blk;
+wire pkt_boundary  = (cstate == BUFFER && nstate == IDLE);      // 包结束边界：当前状态是BUFFER，下一状态是IDLE
+wire blk_boundary  = (buf_slice_cnt == 3'h7 && enqueue_flag);   // 块结束边界：当前正在入队且buf_slice_cnt达到7（即已入队8片数据，满一个块）
+wire any_boundary  = pkt_boundary || blk_boundary;              // 任一边界：包结束或块结束
+wire is_1st_of_q   = (enq_cnt == 16'b0 && first_buf_flag);      // 是否为队列的第一块：当前队列入队计数器为0且first_buf_flag为1（标记了包的第一块）
+wire has_prev_blk  = ~is_1st_of_q;                              // 是否有前块：不是队列的第一块则说明有前块
+wire update_prev   = any_boundary && has_prev_blk;              // 是否需要更新前块的链表信息：当出现任一边界且有前块时，需要更新前块的链表信息以指向当前块  
 
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)

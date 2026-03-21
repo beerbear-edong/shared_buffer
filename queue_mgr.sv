@@ -221,6 +221,7 @@ assign deq_cnt = inq_cnt_reg[deq_addr];
 
 
 // `ifdef FPGA
+wire [23:0] deqhead_rdata_full;
 
 qhead_info qhead_info_inst (
   .clka    (clk              ),  // input wire clka
@@ -234,9 +235,11 @@ qhead_info qhead_info_inst (
   .dinb    (deqhead_wdata    ),  // input wire [23 : 0] dinb
   .doutb   (deqhead_rdata_full)  // output wire [23 : 0] doutb
 );
-wire [23:0] deqhead_rdata_full;
+
 assign deqhead_rdata = deqhead_rdata_full[22:0];
 
+
+wire [15:0] enqtail_rdata_full;
 qtail_info qtail_info_inst (
   .clka    (clk              ),  // input wire clka
   .wea     (r_enqtail_wen    ),  // input wire [0 : 0] wea
@@ -249,7 +252,7 @@ qtail_info qtail_info_inst (
   .dinb    (deqtail_wdata    ),  // input wire [15 : 0] dinb
   .doutb   (deqtail_rdata    )   // output wire [15 : 0] doutb
 );
-wire [15:0] enqtail_rdata_full;
+
 assign enqtail_rdata = enqtail_rdata_full[11:0];
 
 // qlen_info qlen_info_inst (

@@ -12,9 +12,9 @@ reg         sop_ff1, sop_ff2;
 reg  [63:0] wr_data_sample  ;
 reg         rx_wr_en        ;
 wire [65:0] rx_data_i       ;
-reg  [4:0]  pkt_cnt         ;
-wire        wr_eop_flag     ;
-wire        rd_eop_flag     ;
+//reg  [4:0]  pkt_cnt         ;
+//wire        wr_eop_flag     ;
+//wire        rd_eop_flag     ;
 always @(posedge clk or negedge rst_n) begin//时序对齐
     if(~rst_n) begin
         sop_ff1         <= 1'b0;
@@ -44,16 +44,16 @@ pkt_fifo_w66_d1024 pkt_fifo_inst (
   .empty (empty)                                 // output wire empty
 );
 
-always@(posedge clk or negedge rst_n) begin
-    if(~rst_n)
-        pkt_cnt <= 5'b0;
-    else if(wr_eop_flag & !rd_eop_flag)
-        pkt_cnt <= pkt_cnt + 5'b1;
-    else if(!wr_eop_flag & rd_eop_flag)
-        pkt_cnt <= pkt_cnt - 5'b1;
-    else
-        pkt_cnt <= pkt_cnt;
-end
+// always@(posedge clk or negedge rst_n) begin
+//     if(~rst_n)
+//         pkt_cnt <= 5'b0;
+//     else if(wr_eop_flag & !rd_eop_flag)
+//         pkt_cnt <= pkt_cnt + 5'b1;
+//     else if(!wr_eop_flag & rd_eop_flag)
+//         pkt_cnt <= pkt_cnt - 5'b1;
+//     else
+//         pkt_cnt <= pkt_cnt;
+// end
 
 //assign empty = pkt_cnt == 5'b0 ? 1'b1 : 1'b0;
 
