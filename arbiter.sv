@@ -5,7 +5,7 @@ module arbiter (
     input  wire           sch_mode    , // 0 SP, 1 WRR
     input  wire [7:0]     Weight[0:7] ,
     // crossbar相关已删除
-    input  wire [3:0]     cb_rdy      ,
+    // input  wire [3:0]     cb_rdy      ,
     
     // With queue_mgr
     input  wire [31:0]    queue_empty ,
@@ -235,13 +235,13 @@ end
 generate
     genvar i;
     for(i = 0; i < 32; i+=1) begin: queue_schedule_update
-        assign qstatus[i] = (sch_mode ? (|rmd[i]) : 1'b1) & ~queue_empty[i] & cb_rdy[i/8];
+        assign qstatus[i] = (sch_mode ? (|rmd[i]) : 1'b1) & ~queue_empty[i];
         always@(posedge clk or negedge rst_n) begin
             if(~rst_n)
                 rmd[i] <= 8'b0;
             else if(sch_mode == 0)
                 rmd[i] <= 8'b0;
-            else if(nstate == IDLE && ~&queue_empty[i/8*8+7-:8] && cb_rdy[i/8])
+            else if(nstate == IDLE && ~&queue_empty[i/8*8+7-:8])
                 rmd[i] <= rmd[i] + Weight[i % 8];
             else if(sch_en && grant[i])
                 rmd[i] <= rmd[i] - 8'b1;
