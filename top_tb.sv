@@ -20,6 +20,9 @@ module top_tb();
     logic [10:0]    tx_data_len         ;
     logic [3:0]     tx_dst_bus          ;
 
+    // Output pkt_if driven from TX bus (for Monitor)
+    pkt_if          rd[4]()             ;
+
     logic           fin;
 
     rcv_top rcv_top_inst(
@@ -47,23 +50,45 @@ module top_tb();
     
     test t();
 
-    // Monitor input ports (4 ports, no crossbar output)
+    // Drive output pkt_if from TX bus
+    reg [3:0] tx_dst_bus_d;
+    always @(posedge clk or negedge rst_n) begin
+        if(~rst_n)
+            tx_dst_bus_d <= 4'b0;
+        else
+            tx_dst_bus_d <= tx_dst_bus;
+    end
+
     generate
-        genvar i;
-        for(i = 0; i < 4; i++) begin: monitor
-            Monitor#(.id(i)) Monitor_inst(
-              .clk(clk),
-              .rst_n(rst_n),
-              .rd(wr[i]),
-              .fin(fin)
-            );
+        genvar j;
+        for(j = 0; j < 4; j++) begin: tx_to_pktif
+            assign rd[j].vld  = tx_data_en & tx_dst_bus[j];
+            assign rd[j].data = tx_data;
+            assign rd[j].sop  = tx_data_en & tx_dst_bus[j] & ~tx_dst_bus_d[j];
+            assign rd[j].eop  = ~tx_dst_bus[j] & tx_dst_bus_d[j];
         end
     endgenerate
 
-    // Log TX output (replacing crossbar output monitors)
-    always @(posedge clk) begin
-        if(tx_data_en)
-            $display("[TX_OUT] %t dst_bus=%b len=%0d data=%016h", $time, tx_dst_bus, tx_data_len, tx_data);
-    end
+    generate
+        genvar i;
+        for(i = 0; i < 8; i++) begin: monitor
+            if(i < 4) begin
+                Monitor#(.id(i)) Monitor_inst(
+                  .clk(clk),
+                  .rst_n(rst_n),
+                  .rd(wr[i]),
+                  .fin(fin)
+                );
+            end
+            else begin
+                Monitor#(.id(i)) Monitor_inst(
+                  .clk(clk),
+                  .rst_n(rst_n),
+                  .rd(rd[i-4]),
+                  .fin(fin)
+                );
+            end
+        end
+    endgenerate
 
 endmodule
