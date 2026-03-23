@@ -1,3 +1,5 @@
+`ifndef STIMULATOR_SV
+`define STIMULATOR_SV
 class Stimulator;
     string name;
     int id;
@@ -65,3 +67,4 @@ class Stimulator;
         init_port();
     endtask
 endclass
+`endif

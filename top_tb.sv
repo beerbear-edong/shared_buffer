@@ -1,33 +1,41 @@
 `timescale 1ns / 1ps
-`include "top_define.v"
-`include "pkt_if.sv"
-`include "test.sv"
+// `include "top_define.v"
+// `include "pkt_if.sv"
+// `include "test.sv"
 module top_tb();
     logic           clk                 ;
     logic           rst_n               ;
-    logic           full        [0:3]   ;
-    logic           almost_full [0:3]   ;
-    logic           ready       [0:15]  ;
-    pkt_if          wr[16]()            ;
-    pkt_if          rd[16]()            ;
+    logic           full                ;
+    logic           afull               ;
+    pkt_if          wr[4]()             ;
 
     logic           sch_mode            ;
     logic[7:0]      Weight[0:7]         ;
 
-    assign          sch_mode = 1'b0; //
+    assign          sch_mode = 1'b0;
+
+    // TX output (no crossbar, direct output)
+    logic [63:0]    tx_data             ;
+    logic           tx_data_en          ;
+    logic [10:0]    tx_data_len         ;
+    logic [3:0]     tx_dst_bus          ;
 
     logic           fin;
-    SRAM_Controller SRAM_Controller_inst(
+
+    rcv_top rcv_top_inst(
         .clk        (clk        ),
         .rst_n      (rst_n      ),
         .sch_mode   (sch_mode   ),
         .Weight     (Weight     ),
         .wr         (wr         ),
-        .rd         (rd         ),
         .full       (full       ),
-        .almost_full(almost_full),
-        .ready      (ready      )
+        .afull      (afull      ),
+        .tx_data    (tx_data    ),
+        .tx_data_en (tx_data_en ),
+        .tx_data_len(tx_data_len),
+        .tx_dst_bus (tx_dst_bus )
     );
+
     initial begin
         fin <= 1'b0;
         clk <= 1'b0;
@@ -39,30 +47,23 @@ module top_tb();
     
     test t();
 
+    // Monitor input ports (4 ports, no crossbar output)
     generate
         genvar i;
-        for(i = 0; i < 32; i++) begin: monitor
-            if(i < 16) begin
-                Monitor#(.id(i)) Moniter_inst(
-                  .clk(clk),
-                  .rst_n(rst_n),
-                  .rd(wr[i]),
-                  .fin(fin)
-                );
-            end
-            else begin
-                Monitor#(.id(i)) Moniter_inst(
-                  .clk(clk),
-                  .rst_n(rst_n),
-                  .rd(rd[i-16]),
-                  .fin(fin)
-                );
-            end
+        for(i = 0; i < 4; i++) begin: monitor
+            Monitor#(.id(i)) Monitor_inst(
+              .clk(clk),
+              .rst_n(rst_n),
+              .rd(wr[i]),
+              .fin(fin)
+            );
         end
     endgenerate
 
-
-
-
+    // Log TX output (replacing crossbar output monitors)
+    always @(posedge clk) begin
+        if(tx_data_en)
+            $display("[TX_OUT] %t dst_bus=%b len=%0d data=%016h", $time, tx_dst_bus, tx_data_len, tx_data);
+    end
 
 endmodule
