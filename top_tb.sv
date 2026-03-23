@@ -12,8 +12,6 @@ module top_tb();
     logic           sch_mode            ;
     logic[7:0]      Weight[0:7]         ;
 
-    assign          sch_mode = 1'b0;
-
     // TX output (no crossbar, direct output)
     logic [63:0]    tx_data             ;
     logic           tx_data_en          ;
@@ -40,9 +38,14 @@ module top_tb();
     );
 
     initial begin
-        fin <= 1'b0;
-        clk <= 1'b0;
-        rst_n <= 1'b0;
+        integer i;
+        fin      <= 1'b0;
+        clk      <= 1'b0;
+        rst_n    <= 1'b0;
+        sch_mode <= 1'b0;
+        for (i = 0; i < 8; i++) begin
+            Weight[i] <= 8'd1;
+        end
         repeat(200) @(posedge clk);
         rst_n <= 1'b1;
     end
