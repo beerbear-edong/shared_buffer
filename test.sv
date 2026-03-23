@@ -12,6 +12,10 @@ program automatic test();
         for(i = 0; i < 4; i++) begin
             sti[i] = new($sformatf("sti%d", i) , i, wr[i]);
         end
+        // 立即初始化所有端口，防止 x 传播到 DUT
+        for(i = 0; i < 4; i++) begin
+            sti[i].init_port_blocking();
+        end
         repeat(500) @(posedge top_tb.clk);
         // Send packets from port 1 until buffer almost full
         repeat(50) @(posedge top_tb.clk);
@@ -30,6 +34,8 @@ program automatic test();
           sti[1].send_pkt();
         end
         repeat(1000) @(posedge top_tb.clk);
+        top_tb.fin <= 1'b1;
+        repeat(10) @(posedge top_tb.clk);
     end
 
 endprogram

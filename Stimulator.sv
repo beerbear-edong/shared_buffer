@@ -24,6 +24,13 @@ class Stimulator;
         this.id   = _id;
         this.wr   = _wr;
     endfunction
+    // 初始化接口信号，避免 x 传播到 DUT
+    virtual task automatic init_port_blocking();
+        wr.data  = 64'h0;
+        wr.sop   = 1'b0;
+        wr.eop   = 1'b0;
+        wr.vld   = 1'b0;
+    endtask
     virtual task automatic init_port();
         wr.data <= 64'h0000_0000_0000_0000;
         wr.sop  <= 1'b0;

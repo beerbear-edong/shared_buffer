@@ -3,7 +3,7 @@ module Monitor#(
 )(
   input   wire    clk   ,
   input   wire    rst_n ,
-  pkt_if.pkt_out  rd    ,
+  pkt_if.pkt_in   rd    ,
   input   wire    fin    
 );
 integer file;

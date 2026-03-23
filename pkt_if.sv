@@ -1,3 +1,5 @@
+`ifndef PKT_IF
+`define PKT_IF
 interface pkt_if #(
     parameter DW = 64
 )(
@@ -14,3 +16,4 @@ modport pkt_out(
     output sop, eop, vld, data
 );
 endinterface //pkt_if
+`endif
