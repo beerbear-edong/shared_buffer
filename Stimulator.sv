@@ -35,7 +35,7 @@ class Stimulator;
             $display("%h", pkt_data[i]);
         end
     endtask
-    virtual task automatic gen_pkt();
+    virtual task automatic gen_pkt();// 生成随机帧，内容为递增的计数器
         bit[7:0]  cnt = 8'b0;
         assert(this.randomize());
         this.pkt_data = new[pkt_len / 8];

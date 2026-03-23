@@ -9,10 +9,10 @@ module Monitor#(
 integer file;
 bit [31:0] pkt_cnt;
 initial begin
-  if(id < 16)
+  if(id < 4)
     file = $fopen($sformatf("../tc/port_%0d_in.txt", id), "w");
   else
-    file = $fopen($sformatf("../tc/port_%0d_out.txt", id-16), "w");
+    file = $fopen($sformatf("../tc/port_%0d_out.txt", id-4), "w");
 
   wait(fin == 1'b1);
   $fclose(file);
