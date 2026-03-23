@@ -3,6 +3,8 @@
 program automatic test();
     virtual pkt_if wr[4];
     Stimulator sti[4];
+    integer timeout_cnt;  // 超时计数器，防止 while 死循环
+
     initial begin
         integer i;
         wr[0] = top_tb.wr[0];
@@ -16,7 +18,8 @@ program automatic test();
         for(i = 0; i < 4; i++) begin
             sti[i].init_port_blocking();
         end
-        repeat(500) @(posedge top_tb.clk);
+        // 等待 buf_mgr 空闲块 FIFO 初始化完成 (需要 4096+ 周期)
+        repeat(5000) @(posedge top_tb.clk);
 
         // ============================================================
         //  SP (Strict Priority) 测试  —— sch_mode = 0
@@ -24,22 +27,34 @@ program automatic test();
         $display("============================================");
         $display("[TEST] %t  SP test begin", $time);
         $display("============================================");
-        // Send packets from port 1 until buffer almost full
+        // 多端口同时灌包直到 buffer almost full
         repeat(50) @(posedge top_tb.clk);
-        while (top_tb.afull == 1'b0) begin
-          repeat(10) @(posedge top_tb.clk);
-          sti[1].gen_pkt();
-          sti[1].send_pkt();
+        timeout_cnt = 0;
+        while (top_tb.afull == 1'b0 && timeout_cnt < 500) begin
+          repeat(5) @(posedge top_tb.clk);
+          for(i = 0; i < 4; i++) begin
+            sti[i].gen_pkt();
+            sti[i].send_pkt();
+          end
+          timeout_cnt++;
         end
+        if (timeout_cnt >= 500)
+            $display("[WARN] %t  SP fill loop 1 timed out, afull=%b", $time, top_tb.afull);
         // Wait for scheduler to drain some packets
-        repeat(250) @(posedge top_tb.clk);
+        repeat(500) @(posedge top_tb.clk);
         // Send more packets until almost full again
         repeat(100) @(posedge top_tb.clk);
-        while (top_tb.afull == 1'b0) begin
-          repeat(10) @(posedge top_tb.clk);
-          sti[1].gen_pkt();
-          sti[1].send_pkt();
+        timeout_cnt = 0;
+        while (top_tb.afull == 1'b0 && timeout_cnt < 500) begin
+          repeat(5) @(posedge top_tb.clk);
+          for(i = 0; i < 4; i++) begin
+            sti[i].gen_pkt();
+            sti[i].send_pkt();
+          end
+          timeout_cnt++;
         end
+        if (timeout_cnt >= 500)
+            $display("[WARN] %t  SP fill loop 2 timed out, afull=%b", $time, top_tb.afull);
         repeat(1000) @(posedge top_tb.clk);
         $display("============================================");
         $display("[TEST] %t  SP test end", $time);
@@ -79,25 +94,33 @@ program automatic test();
 
         // —— WRR 场景 2：持续从多端口灌包直到 afull
         repeat(50) @(posedge top_tb.clk);
-        while (top_tb.afull == 1'b0) begin
-            repeat(10) @(posedge top_tb.clk);
+        timeout_cnt = 0;
+        while (top_tb.afull == 1'b0 && timeout_cnt < 500) begin
+            repeat(5) @(posedge top_tb.clk);
             for(i = 0; i < 4; i++) begin
                 sti[i].gen_pkt();
                 sti[i].send_pkt();
             end
+            timeout_cnt++;
         end
+        if (timeout_cnt >= 500)
+            $display("[WARN] %t  WRR fill loop 2 timed out, afull=%b", $time, top_tb.afull);
 
         // 等待调度器排空部分报文
         repeat(500) @(posedge top_tb.clk);
 
         // —— WRR 场景 3：再次灌包验证权重累加与轮转
-        while (top_tb.afull == 1'b0) begin
-            repeat(10) @(posedge top_tb.clk);
+        timeout_cnt = 0;
+        while (top_tb.afull == 1'b0 && timeout_cnt < 500) begin
+            repeat(5) @(posedge top_tb.clk);
             for(i = 0; i < 4; i++) begin
                 sti[i].gen_pkt();
                 sti[i].send_pkt();
             end
+            timeout_cnt++;
         end
+        if (timeout_cnt >= 500)
+            $display("[WARN] %t  WRR fill loop 3 timed out, afull=%b", $time, top_tb.afull);
 
         repeat(2000) @(posedge top_tb.clk);
         $display("============================================");
@@ -106,6 +129,7 @@ program automatic test();
 
         top_tb.fin <= 1'b1;
         repeat(10) @(posedge top_tb.clk);
+        $finish;
     end
 
 endprogram
