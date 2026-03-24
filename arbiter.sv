@@ -241,7 +241,7 @@ generate
                 rmd[i] <= 8'b0;
             else if(sch_mode == 0)
                 rmd[i] <= 8'b0;
-            else if(nstate == IDLE && ~&queue_empty[i/8*8+7-:8])
+            else if(cstate != IDLE && nstate == IDLE && ~&queue_empty[i/8*8+7-:8])
                 rmd[i] <= rmd[i] + Weight[i % 8];
             else if(sch_en && grant[i])
                 rmd[i] <= rmd[i] - 8'b1;
