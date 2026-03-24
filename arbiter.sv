@@ -56,9 +56,7 @@ always@(*) begin
                 nstate <= ARB_KEEP;
             end
             ARB_KEEP: begin
-                if(sch_done && ~|qstatus)
-                    nstate <= IDLE;
-                else if(sch_done)
+                if(sch_done)
                     nstate <= IDLE;
                 else
                     nstate <= ARB_KEEP;
@@ -241,8 +239,8 @@ generate
                 rmd[i] <= 8'b0;
             else if(sch_mode == 0)
                 rmd[i] <= 8'b0;
-            else if(cstate != IDLE && nstate == IDLE && ~&queue_empty[i/8*8+7-:8])
-                rmd[i] <= rmd[i] + Weight[i % 8];
+            else if(cstate == IDLE && ~&queue_empty[i/8*8+7-:8] && ~|rmd[i])
+                rmd[i] <= Weight[i % 8];
             else if(sch_en && grant[i])
                 rmd[i] <= rmd[i] - 8'b1;
             else
