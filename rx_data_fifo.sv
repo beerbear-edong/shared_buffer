@@ -31,8 +31,8 @@ always @(posedge clk or negedge rst_n) begin//时序对齐
 end
 
 assign rx_data_i = {sop_ff2, wr.eop, wr_data_sample};
-assign wr_eop_flag = rx_wr_en     & rx_data_i[64];
-assign rd_eop_flag = rx_rd_en     & rx_data_o[64];
+// assign wr_eop_flag = rx_wr_en     & rx_data_i[64];
+// assign rd_eop_flag = rx_rd_en     & rx_data_o[64];
 pkt_fifo_w66_d1024 pkt_fifo_inst (
   .clk   (clk)                                   ,    // input wire clk
   .rst   (~rst_n)                                ,    // input wire rst
