@@ -1,5 +1,6 @@
 `include "Stimulator.sv"
 // `include "Monitor.sv"  // Monitor is already in the Vivado sim fileset
+`timescale 1ns / 1ps
 program automatic test();
     virtual pkt_if wr[4];
     Stimulator sti[4];

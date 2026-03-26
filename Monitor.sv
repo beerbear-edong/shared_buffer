@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module Monitor#(
   parameter id = 0
 )(
