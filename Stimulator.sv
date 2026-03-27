@@ -17,27 +17,22 @@ class Stimulator;
         pkt_len % 8 == 0;
         pkt_len % 64 != 8;
         pkt_len % 64 != 16;
-        //pkt_len % 64 == 24;
+        pkt_len % 64 == 24;
     };
     function new(string _name, int _id, virtual pkt_if.pkt_out _wr);
         this.name = _name;
         this.id   = _id;
         this.wr   = _wr;
     endfunction
-    // 初始化接口信号，避免 x 传播到 DUT
-    virtual task automatic init_port_blocking();
-        wr.data  = 64'h0;
-        wr.sop   = 1'b0;
-        wr.eop   = 1'b0;
-        wr.vld   = 1'b0;
-    endtask
+
     virtual task automatic init_port();
-        wr.data <= 64'h0000_0000_0000_0000;
+        wr.data <= 64'b0;
         wr.sop  <= 1'b0;
         wr.eop  <= 1'b0;
         wr.vld  <= 1'b0;
     endtask
     virtual task automatic pkt_show();
+        $display("port:%d",id);
         for(int i = 0; i < pkt_len / 8; i+=1) begin
             $display("%h", pkt_data[i]);
         end
@@ -53,6 +48,7 @@ class Stimulator;
         end
         $display("[TRACE]%t Generated packet:",$time);
         pkt_show();
+        $display("[TRACE]%t Generated packet end",$time);
     endtask
     task automatic send_pkt();
         init_port();
