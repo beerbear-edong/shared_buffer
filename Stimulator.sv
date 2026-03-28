@@ -50,6 +50,29 @@ class Stimulator;
         pkt_show();
         $display("[TRACE]%t Generated packet end",$time);
     endtask
+
+    // 定向造包：用于SP/WRR等调度场景的可控验证
+    virtual task automatic gen_pkt_fixed_pri(
+        input bit[2:0]  pri_i,
+        input bit[10:0] pkt_len_i = 11'd88,
+        input bit[3:0]  dst_port_i = 4'b0001
+    );
+        bit[7:0]  cnt = 8'b0;
+
+        this.pri      = pri_i;
+        this.pkt_len  = pkt_len_i;
+        this.dst_port = dst_port_i;
+        // 其余字段随机，便于区分包内容
+        assert(this.randomize(content, mark));
+
+        this.pkt_data = new[this.pkt_len / 8];
+        this.pkt_data[0] = {46'b0, this.pkt_len, this.pri, this.dst_port};
+        for(int i = 1; i < this.pkt_len / 8; i+=1) begin
+            this.pkt_data[i] = {{4{content}}, mark, cnt};
+            cnt += 8'b1;
+        end
+    endtask
+
     task automatic send_pkt();
         init_port();
         @(posedge top_tb.clk);
