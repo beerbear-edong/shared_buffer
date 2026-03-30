@@ -8,7 +8,7 @@ module rx_data_fifo(
     output wire          empty
 );
 
-reg         sop_ff1, sop_ff2;
+reg         sop_ff1, eop_ff1;
 reg  [63:0] wr_data_sample  ;
 reg         rx_wr_en        ;
 wire [65:0] rx_data_i       ;
@@ -18,19 +18,19 @@ wire [65:0] rx_data_i       ;
 always @(posedge clk or negedge rst_n) begin//时序对齐
     if(~rst_n) begin
         sop_ff1         <= 1'b0;
-        sop_ff2         <= 1'b0;
+        eop_ff1         <= 1'b0;
         wr_data_sample  <= 64'b0;
         rx_wr_en        <= 1'b0;
     end
     else begin
         sop_ff1         <= wr.sop;
-        sop_ff2         <= sop_ff1;
+        eop_ff1         <= wr.eop;
         wr_data_sample  <= wr.data;
         rx_wr_en        <= wr.vld;
     end
 end
 
-assign rx_data_i = {sop_ff2, wr.eop, wr_data_sample};
+assign rx_data_i = {sop_ff1, eop_ff1, wr_data_sample};
 // assign wr_eop_flag = rx_wr_en     & rx_data_i[64];
 // assign rd_eop_flag = rx_rd_en     & rx_data_o[64];
 pkt_fifo_w66_d1024 pkt_fifo_inst (
