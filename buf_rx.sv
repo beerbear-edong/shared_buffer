@@ -58,7 +58,7 @@ reg           enqueue_flag;
 wire          buf_req;
 
 reg  [11:0]   buf_use_addr, buf_use_addr_ff1;
-reg  [2:0]    buf_slice_cnt;
+reg  [2:0]    buf_slice_cnt, buf_slice_cnt_ff1;
 reg           first_buf_flag, first_buf_flag_ff1;// 用于标记包的第一块，单块包的第一块也是最后一块
 
 reg  [4:0]    qid;
@@ -181,6 +181,13 @@ end
 
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
+        buf_slice_cnt_ff1 <= 3'b0;
+    else
+        buf_slice_cnt_ff1 <= buf_slice_cnt;
+end
+
+always@(posedge clk or negedge rst_n) begin
+    if(~rst_n)
         buf_use_addr  <= 12'b0;
     else if(!enqueue_flag || blk_boundary)
         buf_use_addr  <= buf_blk_addr;
@@ -294,10 +301,10 @@ always@(posedge clk or negedge rst_n) begin
             buf_list_info_wdata  <= {4'b0,
                                      first_buf_flag_ff1,
                                      pkt_ed,
-                                     buf_slice_cnt,
+                                     buf_slice_cnt_ff1,
                                      buf_use_addr_ff1,
                                      r_pkt_len};
-            tail_meta[qid]       <= {first_buf_flag_ff1, pkt_ed, buf_slice_cnt, r_pkt_len};
+            tail_meta[qid]       <= {first_buf_flag_ff1, pkt_ed, buf_slice_cnt_ff1, r_pkt_len};
         end
     end
 end
