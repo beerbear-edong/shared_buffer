@@ -71,16 +71,17 @@ class Stimulator;
             this.pkt_data[i] = {{4{content}}, mark, cnt};
             cnt += 8'b1;
         end
+        $display("[TRACE]%t Generated packet:",$time);
+        pkt_show();
+        $display("[TRACE]%t Generated packet end",$time);
     endtask
 
     task automatic send_pkt();
         init_port();
-        @(posedge top_tb.clk);
-        wr.sop <= 1'b1;
         for(int i = 0; i < pkt_len / 8; i+=1) begin
             @(posedge top_tb.clk);
-            wr.sop  <= 1'b0;
-            wr.eop  <= 1'b0;
+            wr.sop  <= (i == 0);
+            wr.eop  <= (i == (pkt_len / 8 - 1));
             wr.vld  <= 1'b1;
             wr.data <= pkt_data[i];
         end
@@ -88,7 +89,7 @@ class Stimulator;
         wr.vld  <= 1'b0;
         wr.data <= 64'b0;
         wr.sop  <= 1'b0;
-        wr.eop  <= 1'b1;
+        wr.eop  <= 1'b0;
         @(posedge top_tb.clk);
         init_port();
     endtask
