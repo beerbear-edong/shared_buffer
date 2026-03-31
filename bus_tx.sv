@@ -37,13 +37,14 @@ module bus_tx(
     output reg  [3:0]   tx_dst_bus              
 );
 
-parameter IDLE   = 4'b0001;
-parameter PAUSE1 = 4'b0010;
-parameter PAUSE2 = 4'b0100;
-parameter TRANS  = 4'b1000;
+parameter IDLE   = 5'b00001;
+parameter PAUSE1 = 5'b00010;
+parameter PAUSE2 = 5'b00100;
+parameter WAIT   = 5'b01000;
+parameter TRANS  = 5'b10000;
 
 
-reg [3:0]  nstate, cstate;
+reg [4:0]  nstate, cstate;
 
 reg [2:0]  buf_slice_cnt;
 reg [11:0] buf_deq_addr;
@@ -71,6 +72,8 @@ always@(*) begin
             PAUSE1:
                 nstate <= PAUSE2;
             PAUSE2:
+                nstate <= WAIT;
+            WAIT:
                 nstate <= TRANS;
             TRANS: begin
                 if(sch_done)
