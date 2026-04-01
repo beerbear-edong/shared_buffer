@@ -49,7 +49,8 @@ reg [4:0]  nstate, cstate;
 reg [2:0]  buf_slice_cnt;
 reg [11:0] buf_deq_addr;
 
-reg        pkt_rd_en, pkt_rd_en_ff1;
+reg        pkt_rd_en;
+reg        trans_1st;
 
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
@@ -105,6 +106,18 @@ always@(posedge clk or negedge rst_n) begin
         buf_slice_cnt <= 3'b0;
 end
 
+// 进入TRANS首拍时，链表RAM的同步读数据可能仍未稳定，需屏蔽一次结束/换块判定
+always@(posedge clk or negedge rst_n) begin
+    if(~rst_n)
+        trans_1st <= 1'b0;
+    else if(cstate != TRANS && nstate == TRANS)
+        trans_1st <= 1'b1;
+    else if(cstate == TRANS)
+        trans_1st <= 1'b0;
+    else
+        trans_1st <= 1'b0;
+end
+
 // always@(posedge clk or negedge rst_n) begin
 //     if(~rst_n)
 //         buf_rd_addr <= 15'b0;
@@ -125,8 +138,8 @@ always@(posedge clk or negedge rst_n) begin
         rls_buf_blk_en <= 1'b0;
         rls_buf_blk_addr <= 12'b0;
     end
-    else if(nstate == TRANS && buf_slice_cnt + 3'b1 == buf_list_info_rdata[25:23]) begin
-        buf_deq_addr <= buf_list_info_rdata[22:11];// 更新为下一包的地址
+    else if(cstate == TRANS && !trans_1st && buf_slice_cnt == buf_list_info_rdata[25:23]) begin
+        buf_deq_addr <= buf_list_info_rdata[22:11];// 当前块结束后，更新为下一包/下一块地址
         rls_buf_blk_en <= 1'b1;
         rls_buf_blk_addr <= buf_deq_addr;
     end
@@ -164,7 +177,7 @@ end
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         sch_done <= 1'b0;
-    else if(nstate == TRANS && buf_list_info_rdata[26] && buf_slice_cnt + 3'b1 == buf_list_info_rdata[25:23])
+    else if(cstate == TRANS && !trans_1st && buf_list_info_rdata[26] && buf_slice_cnt == buf_list_info_rdata[25:23])
         sch_done <= 1'b1;
     else
         sch_done <= 1'b0;
@@ -174,7 +187,7 @@ end
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         tx_dst_bus <= 4'b0;
-    else if(pkt_rd_en_ff1) begin
+    else if(cstate == TRANS && pkt_rd_en) begin
         case(sch_id[4:3])
             2'b00:
                 tx_dst_bus <= 4'b0001;
@@ -204,20 +217,11 @@ end
 
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
-        pkt_rd_en_ff1 <= 1'b0;
-    end
-    else begin
-        pkt_rd_en_ff1 <= pkt_rd_en;
-    end
-end
-
-always@(posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
         tx_data      <= 64'b0;
         tx_data_en   <= 1'b0 ;
         tx_data_len  <= 11'b0;
     end
-    else if(pkt_rd_en_ff1) begin
+    else if(cstate == TRANS && pkt_rd_en) begin
         tx_data      <= buf_rd_data;
         tx_data_en   <= 1'b1;
         tx_data_len  <= deqhead_rdata[10:0];
