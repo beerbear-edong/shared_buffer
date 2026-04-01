@@ -96,6 +96,12 @@ assign buf_rd_addr = {buf_deq_addr, buf_slice_cnt};
 // assign rls_buf_blk_addr = buf_deq_addr;
 assign deqtail_wen = 1'b0;
 assign deqtail_wdata = 16'b0;
+
+wire blk_switch_done;
+assign blk_switch_done = (cstate == TRANS) && !trans_1st &&
+                         (buf_slice_cnt == buf_list_info_rdata[25:23]) &&
+                         !buf_list_info_rdata[26];
+
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
         buf_slice_cnt <= 3'b0;
@@ -106,11 +112,11 @@ always@(posedge clk or negedge rst_n) begin
         buf_slice_cnt <= 3'b0;
 end
 
-// 进入TRANS首拍时，链表RAM的同步读数据可能仍未稳定，需屏蔽一次结束/换块判定
+// 进入TRANS或切换到下一块后的首拍，链表RAM同步读数据都可能未稳定，需统一屏蔽一次判定
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         trans_1st <= 1'b0;
-    else if(cstate != TRANS && nstate == TRANS)
+    else if((cstate != TRANS && nstate == TRANS) || blk_switch_done)
         trans_1st <= 1'b1;
     else if(cstate == TRANS)
         trans_1st <= 1'b0;
