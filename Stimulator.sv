@@ -46,9 +46,6 @@ class Stimulator;
             this.pkt_data[i] = {{4{content}}, mark, cnt};
             cnt += 8'b1;
         end
-        $display("[TRACE]%t Generated packet:",$time);
-        pkt_show();
-        $display("[TRACE]%t Generated packet end",$time);
     endtask
 
     // 定向造包：用于SP/WRR等调度场景的可控验证
@@ -71,9 +68,6 @@ class Stimulator;
             this.pkt_data[i] = {{4{content}}, mark, cnt};
             cnt += 8'b1;
         end
-        $display("[TRACE]%t Generated packet:",$time);
-        pkt_show();
-        $display("[TRACE]%t Generated packet end",$time);
     endtask
 
     task automatic send_pkt();
