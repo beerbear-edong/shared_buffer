@@ -24,6 +24,7 @@ parameter ARB_KEEP = 4'b0100;
 reg  [3:0]   nstate, cstate;
 
 wire [31:0]  qstatus        ;
+wire [3:0]   port_rmd_empty ;//每个port当前轮次是否已无可调度队列(qstatus全0)
 reg  [7:0]   rmd[0:31]      ;
 reg  [31:0]  top_pri        ;
 
@@ -230,6 +231,12 @@ always@(posedge clk or negedge rst_n) begin
     else
         sch_en <= 1'b0;
 end
+
+assign port_rmd_empty[0] = ~|qstatus[7:0];
+assign port_rmd_empty[1] = ~|qstatus[15:8];
+assign port_rmd_empty[2] = ~|qstatus[23:16];
+assign port_rmd_empty[3] = ~|qstatus[31:24];
+
 generate
     genvar i;
     for(i = 0; i < 32; i+=1) begin: queue_schedule_update
@@ -239,8 +246,9 @@ generate
                 rmd[i] <= 8'b0;
             else if(sch_mode == 0)
                 rmd[i] <= 8'b0;
-            else if(cstate == IDLE && ~&queue_empty[i/8*8+7-:8] && ~|rmd[i])
+            else if(cstate == IDLE && port_rmd_empty[i/8]) begin
                 rmd[i] <= Weight[i % 8];
+            end
             else if(sch_en && grant[i])
                 rmd[i] <= rmd[i] - 8'b1;
             else
