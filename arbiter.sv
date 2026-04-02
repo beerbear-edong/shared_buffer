@@ -275,7 +275,7 @@ always@(posedge clk or negedge rst_n) begin
     else if(~sch_mode)
         top_pri <= {4{8'b1}};
     else if(sch_en && fin) begin
-        case(sch_id[3:2])
+        case(sch_id[4:3])
             2'b00:
                 top_pri <= {top_pri[31:8], grant[6:0], grant[7]};
             2'b01:
