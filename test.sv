@@ -5,10 +5,11 @@ program automatic test();
     virtual pkt_if wr[4];
     Stimulator sti[4];
     integer timeout_cnt;  // 超时计数器，防止 while 死循环
-    parameter TIMEOUT = 10;
+    parameter TIMEOUT = 1000;
 
     initial begin
         integer i;
+        integer drain_wait_cnt;
         wr[0] = top_tb.wr[0];
         wr[1] = top_tb.wr[1];
         wr[2] = top_tb.wr[2];
@@ -66,8 +67,19 @@ program automatic test();
         //  WRR (Weighted Round Robin) 测试  —— sch_mode = 1
         // ============================================================
 
-        // 等全部队列排空，再切换到 WRR 模式
-        repeat(2000) @(posedge top_tb.clk);
+        // 等队列尽量排空后再切 WRR；避免固定2000拍不够导致WRR阶段过短
+        drain_wait_cnt = 0;
+        while ((top_tb.rcv_top_inst.queue_empty != 32'hffff_ffff || top_tb.rcv_top_inst.buf_blk_cnt < 13'd4090)
+               && drain_wait_cnt < (TIMEOUT * 20)) begin
+            @(posedge top_tb.clk);
+            drain_wait_cnt++;
+        end
+        if (drain_wait_cnt >= (TIMEOUT * 20))
+            $display("[WARN] %t  pre-WRR drain timed out: queue_empty=%h, buf_blk_cnt=%0d, afull=%b",
+                     $time, top_tb.rcv_top_inst.queue_empty, top_tb.rcv_top_inst.buf_blk_cnt, top_tb.afull);
+        else
+            $display("[INFO] %t  pre-WRR drain done in %0d cycles: queue_empty=%h, buf_blk_cnt=%0d, afull=%b",
+                     $time, drain_wait_cnt, top_tb.rcv_top_inst.queue_empty, top_tb.rcv_top_inst.buf_blk_cnt, top_tb.afull);
 
         // 配置 WRR 权重：pri 0‑7 分别配置不同权重
         top_tb.Weight[0] <= 8'd1;
@@ -84,6 +96,8 @@ program automatic test();
 
         $display("============================================");
         $display("[TEST] %t  WRR test begin  (Weight = 1,2,4,8,1,2,4,8)", $time);
+        $display("[INFO] %t  WRR begin snapshot: afull=%b, buf_blk_cnt=%0d, queue_empty=%h",
+             $time, top_tb.afull, top_tb.rcv_top_inst.buf_blk_cnt, top_tb.rcv_top_inst.queue_empty);
         $display("============================================");
 
         // —— WRR 场景 1：多端口同时注入，观察 WRR 调度公平性
@@ -105,6 +119,8 @@ program automatic test();
             end
             timeout_cnt++;
         end
+        $display("[INFO] %t  WRR fill loop 2 finished: iter=%0d, afull=%b, buf_blk_cnt=%0d, queue_empty=%h",
+                 $time, timeout_cnt, top_tb.afull, top_tb.rcv_top_inst.buf_blk_cnt, top_tb.rcv_top_inst.queue_empty);
         if (timeout_cnt >= TIMEOUT)
             $display("[WARN] %t  WRR fill loop 2 timed out, afull=%b", $time, top_tb.afull);
 
@@ -121,6 +137,8 @@ program automatic test();
             end
             timeout_cnt++;
         end
+        $display("[INFO] %t  WRR fill loop 3 finished: iter=%0d, afull=%b, buf_blk_cnt=%0d, queue_empty=%h",
+                 $time, timeout_cnt, top_tb.afull, top_tb.rcv_top_inst.buf_blk_cnt, top_tb.rcv_top_inst.queue_empty);
         if (timeout_cnt >= TIMEOUT)
             $display("[WARN] %t  WRR fill loop 3 timed out, afull=%b", $time, top_tb.afull);
 
