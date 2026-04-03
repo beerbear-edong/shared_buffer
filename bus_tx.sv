@@ -91,8 +91,10 @@ end
 assign deqhead_addr = sch_id;
 assign deqtail_addr = sch_id;
 assign deq_addr     = sch_id;
-assign buf_list_info_raddr = buf_deq_addr;
-assign buf_rd_addr = {buf_deq_addr, buf_slice_cnt};
+wire tx_read_addr_vld;
+assign tx_read_addr_vld = (cstate == WAIT) || (cstate == TRANS) || (nstate == TRANS);
+assign buf_list_info_raddr = tx_read_addr_vld ? buf_deq_addr : 12'b0;
+assign buf_rd_addr = tx_read_addr_vld ? {buf_deq_addr, buf_slice_cnt} : 15'b0;
 // assign rls_buf_blk_addr = buf_deq_addr;
 assign deqtail_wen = 1'b0;
 assign deqtail_wdata = 16'b0;
