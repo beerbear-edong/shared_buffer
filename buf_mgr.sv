@@ -29,45 +29,67 @@ wire [31:0] buf_list_info_rdata_full;
 // 空闲buffer块初始化以及释放逻辑
 reg  [12:0] init_cnt                 ;
 reg         free_blk_fifo_init_done  ;
+reg  [1:0]  free_blk_fifo_wait_cnt   ;
+reg         free_blk_fifo_init_start ;
 
-reg  [11:0] free_blk_fifo_wdata      ;//大区块地址
-reg         free_blk_fifo_wren       ;
+wire [11:0] free_blk_fifo_wdata      ;//大区块地址
+wire        free_blk_fifo_wren       ;
 wire        free_blk_fifo_req        ;
 wire [11:0] free_blk_fifo_addr       ;
 wire        free_blk_fifo_full       ;
 wire [12:0] free_blk_count           ;
+wire        free_blk_fifo_init_wr    ;
+
+assign free_blk_fifo_init_wr = (free_blk_fifo_init_start == 1'b1)
+                             && (free_blk_fifo_init_done  == 1'b0)
+                             && (free_blk_fifo_full       == 1'b0);
+
+assign free_blk_fifo_wren  = (free_blk_fifo_init_done == 1'b0) ? free_blk_fifo_init_wr : rls_buf_blk_en;
+assign free_blk_fifo_wdata = (free_blk_fifo_init_done == 1'b0) ? init_cnt[11:0]         : rls_buf_blk_addr;
 
 always @(posedge clk or negedge rst_n) begin
     if(~rst_n)
         init_cnt <= 13'b0;
-    else if(free_blk_fifo_init_done == 1'b0)
+    else if(free_blk_fifo_init_wr == 1'b1)
         init_cnt <= init_cnt + 13'b1;
     else
         init_cnt <= init_cnt;
 end
 
 always @(posedge clk or negedge rst_n) begin
-    if(~rst_n)
-        free_blk_fifo_init_done <= 1'b0;
-    else if(init_cnt == 13'b0_1111_1111_1111)
-        free_blk_fifo_init_done <= 1'b1;
-    else
-        free_blk_fifo_init_done <= free_blk_fifo_init_done;
+    if(~rst_n) begin
+        free_blk_fifo_wait_cnt   <= 2'b0;
+        free_blk_fifo_init_start <= 1'b0;
+    end
+    else if(free_blk_fifo_init_done == 1'b1) begin
+        free_blk_fifo_wait_cnt   <= free_blk_fifo_wait_cnt;
+        free_blk_fifo_init_start <= free_blk_fifo_init_start;
+    end
+    else if(free_blk_fifo_init_start == 1'b1) begin
+        free_blk_fifo_wait_cnt   <= free_blk_fifo_wait_cnt;
+        free_blk_fifo_init_start <= free_blk_fifo_init_start;
+    end
+    else if(free_blk_fifo_full == 1'b1) begin
+        free_blk_fifo_wait_cnt   <= 2'b0;
+        free_blk_fifo_init_start <= 1'b0;
+    end
+    else if(free_blk_fifo_wait_cnt == 2'd1) begin
+        free_blk_fifo_wait_cnt   <= free_blk_fifo_wait_cnt;
+        free_blk_fifo_init_start <= 1'b1;
+    end
+    else begin
+        free_blk_fifo_wait_cnt   <= free_blk_fifo_wait_cnt + 2'b1;
+        free_blk_fifo_init_start <= 1'b0;
+    end
 end
 
 always @(posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
-        free_blk_fifo_wren  <= 1'b0;
-        free_blk_fifo_wdata <= 12'b0;
-    end
-    else if(free_blk_fifo_init_done == 1'b0 && free_blk_fifo_full == 1'b0) begin
-        free_blk_fifo_wren  <= 1'b1;
-        free_blk_fifo_wdata <= init_cnt[11:0];
-    end
-    else begin
-        free_blk_fifo_wren  <= rls_buf_blk_en;
-        free_blk_fifo_wdata <= rls_buf_blk_addr;
-    end
+    if(~rst_n)
+        free_blk_fifo_init_done <= 1'b0;
+    else if((free_blk_fifo_init_wr == 1'b1) && (init_cnt == 13'b0_1111_1111_1111))
+        free_blk_fifo_init_done <= 1'b1;
+    else
+        free_blk_fifo_init_done <= free_blk_fifo_init_done;
 end
 
 // `ifdef FPGA
