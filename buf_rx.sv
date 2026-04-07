@@ -266,8 +266,8 @@ always @(posedge clk or negedge rst_n) begin
         enqtail_wen    <= 1'b0;
     end
     else begin
-        enqtail_wen   <= any_boundary;
-        enqtail_wdata <= any_boundary ? {4'b0, buf_use_addr} : 16'b0;
+        enqtail_wen   <= pkt_boundary;
+        enqtail_wdata <= pkt_boundary ? {4'b0, buf_use_addr} : 16'b0;
     end
 end
 
@@ -318,7 +318,7 @@ always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
         blk_ed  <= 1'b0;
     else
-        blk_ed  <= any_boundary;
+        blk_ed  <= blk_boundary;
 end
 
 always@(posedge clk or negedge rst_n) begin
