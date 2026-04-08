@@ -155,12 +155,13 @@ assign enqtail_addr = qid;
 assign enq_addr     = qid;
 
 // 公共条件信号
-wire pkt_boundary  = (cstate == BUFFER && nstate == IDLE);      // 包结束边界：当前状态是BUFFER，下一状态是IDLE
-wire blk_boundary  = (buf_slice_cnt == 3'h7 && enqueue_flag);   // 块结束边界：当前正在入队且buf_slice_cnt达到7（即已入队8片数据，满一个块）
-wire any_boundary  = pkt_boundary || blk_boundary;              // 任一边界：包结束或块结束
-wire is_1st_of_q   = (enq_cnt == 16'b0 && first_buf_flag);      // 是否为队列的第一块：当前队列入队计数器为0且first_buf_flag为1（标记了包的第一块）
-wire has_prev_blk  = ~is_1st_of_q;                              // 是否有前块：不是队列的第一块则说明有前块
-wire update_prev   = any_boundary && has_prev_blk;              // 是否需要更新前块的链表信息：当出现任一边界且有前块时，需要更新前块的链表信息以指向当前块  
+wire pkt_boundary   = (cstate == BUFFER && nstate == IDLE);      // 包结束边界：当前状态是BUFFER，下一状态是IDLE
+wire blk_boundary   = (buf_slice_cnt == 3'h7 && enqueue_flag);   // 块结束边界：当前正在入队且buf_slice_cnt达到7（即已入队8片数据，满一个块）
+wire any_boundary   = pkt_boundary || blk_boundary;              // 任一边界：包结束或块结束
+wire is_1st_of_q    = (enq_cnt == 16'b0 && first_buf_flag);      // 是否为队列的第一块：当前队列入队计数器为0且first_buf_flag为1（标记了包的第一块）
+wire has_prev_blk   = ~is_1st_of_q;                              // 是否有前块：不是队列的第一块则说明有前块
+wire tail0_collision = pkt_boundary && blk_ed && (buf_slice_cnt == 3'b0);
+wire update_prev    = any_boundary && has_prev_blk && !tail0_collision; // slice==0尾块边界冲突时，禁止再次改写旧tail地址
 
 always@(posedge clk or negedge rst_n) begin
     if(~rst_n)
@@ -286,7 +287,22 @@ always@(posedge clk or negedge rst_n) begin
         buf_list_info_waddr  <= 12'b0;
         buf_list_info_wdata  <= 32'b0;
 
-        if (update_prev) begin
+        if (tail0_collision) begin
+            // 特殊边界：上一拍满块结束，本拍尾块只写了 slice0 就包结束。
+            // 这一拍不能再去改写更老的 tail_addr；应直接把上一满块“补全+指向当前尾块”合并成一次写。
+            // 下一拍再由 pkt_ed 把当前尾块自身补全，避免丢链/错链。
+            buf_list_info_wen    <= 1'b1;
+            buf_list_info_waddr  <= buf_use_addr_ff1;
+            buf_list_info_wdata  <= {4'b0,
+                                     first_buf_flag_ff1,
+                                     1'b0,
+                                     buf_slice_cnt_ff1,
+                                     buf_use_addr,
+                                     r_pkt_len};
+            tail_addr[qid]       <= buf_use_addr_ff1;
+            tail_meta[qid]       <= {1'b0, buf_slice_cnt_ff1, r_pkt_len};
+        end
+        else if (update_prev) begin
             // 改写上一块的 next_addr，使之指向当前块；上一块地址使用本地缓存的 tail_addr，
             // 避免 enqtail_rdata 为同步RAM输出而滞后一拍导致误写到地址0/旧地址。
             buf_list_info_wen    <= 1'b1;
