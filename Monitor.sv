@@ -41,17 +41,20 @@ module Monitor#(
     void'($system("cmd /c if not exist ..\\tc mkdir ..\\tc >nul 2>nul"));
 
     wait(fin == 1'b1);
-    if(file != 0)
+    if(file != 0) begin
       $fclose(file);
+      file = 0;
+    end
+    log_disabled = 1'b1;
   end
 
   always@(posedge clk) begin
-    if(rst_n && (rd.vld || rd.eop) && file == 0 && !log_disabled)
+    if(rst_n && !fin && (rd.vld || rd.eop) && file == 0 && !log_disabled)
       open_log_file();
 
-    if(file != 0 && rd.vld)
+    if(!fin && file != 0 && rd.vld)
       $fdisplay(file, "%016h", rd.data);
-    else if(file != 0 && rd.eop)
+    else if(!fin && file != 0 && rd.eop)
       $fdisplay(file, "");
   end
 
