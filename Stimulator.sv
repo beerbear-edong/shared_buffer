@@ -13,11 +13,7 @@ class Stimulator;
     rand bit[3:0]  dst_port;
     constraint pkt_c{
         pkt_len >= 11'd64;
-        pkt_len <= 11'd1024;
-        pkt_len % 8 == 0;
-        pkt_len % 64 != 8;
-        pkt_len % 64 != 16;
-        pkt_len % 64 == 24;
+        pkt_len <= 11'd1518;
     };
     function new(string _name, int _id, virtual pkt_if.pkt_out _wr);
         this.name = _name;
